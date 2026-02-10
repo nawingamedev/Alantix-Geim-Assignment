@@ -1,9 +1,8 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine.UI;
 using UnityEngine;
-using Unity.VisualScripting;
 using UnityEngine.EventSystems;
+
 
 public class CardBehaviour : MonoBehaviour,IPointerClickHandler
 {
@@ -11,6 +10,9 @@ public class CardBehaviour : MonoBehaviour,IPointerClickHandler
     public CardStates State = CardStates.FaceDown;
     [SerializeField] private GameObject Backface;
     [SerializeField] private Image frontFace;
+    [SerializeField] private float flipTime = 0.3f;
+
+    private Coroutine coroutine;
     public delegate void ClickCard(CardBehaviour card);
     public static ClickCard CardClicked;
 
@@ -42,20 +44,50 @@ public class CardBehaviour : MonoBehaviour,IPointerClickHandler
     }
     public void FlipCard(bool status)
     {
-        Backface.SetActive(!status);
-        if(status){State = CardStates.FaceUp;}
-        else{State = CardStates.FaceDown;}
+        coroutine = StartCoroutine(FlipCardCoroutine(status));
     }
     public void MatchedCard()
     {
         frontFace.color = new Color(0,0,0,0);
         State = CardStates.Matched;
     }
+    IEnumerator FlipCardCoroutine(bool status)
+    {
+        State = CardStates.flipping;
+
+        float t = 0f;
+        float half = flipTime / 2f;
+
+        while (t < half)
+        {
+            t += Time.deltaTime;
+            float p = t / half;
+            transform.localScale = new Vector3(Mathf.Lerp(1f, 0f, p), 1f, 1f);
+            yield return null;
+        }
+
+        Backface.SetActive(!status);
+
+        t = 0f;
+        while (t < half)
+        {
+            t += Time.deltaTime;
+            float p = t / half;
+            transform.localScale = new Vector3(Mathf.Lerp(0f, 1f, p), 1f, 1f);
+            yield return null;
+        }
+
+        transform.localScale = Vector3.one;
+
+        State = status ? CardStates.FaceUp : CardStates.FaceDown;
+    }
+
+
 }
 public enum CardStates
 {
     FaceDown,
-    Flipping,
     FaceUp,
+    flipping,
     Matched,
 }
